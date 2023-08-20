@@ -1,15 +1,17 @@
 const userExpress = require('express');
 const userRouter = userExpress.Router();
 
-const { postUser, getUser, putUser, deleteUser } = require('../controllers/userController');
+const { loginUser, postUser, getUser, getAllUsers, putUser, deleteUser } = require('../controllers/userController');
 
 // Enable route protection using JWT authentication
 const { userProtect } = require('../middleware/authMiddleware');
 
 // Add router routes for CRUD operations on users. 
-userRouter.get('/getUsers', userProtect, getUser);
-userRouter.post('/addUser', userProtect, postUser);
-userRouter.put('/updateUser', userProtect, putUser);
-userRouter.delete('/deleteUser', userProtect, deleteUser);
+userRouter.get('/get-users', userProtect, getAllUsers);
+userRouter.get('/get-user', userProtect, getUser);
+userRouter.post('/add-user', userProtect, postUser);
+userRouter.post('/login-user', loginUser);
+userRouter.put('/update-user', userProtect, putUser);
+userRouter.delete('/delete-user', userProtect, deleteUser);
 
 module.exports = userRouter;

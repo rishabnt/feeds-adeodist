@@ -4,11 +4,11 @@ const express = require('express')
 const colors = require('colors')
 const dotenv = require('dotenv').config()
 const port = process.env.PORT || 5000
-const connectDB = require('./config/db')
-const errorHandlerMiddleware = require('./middleware/errorMiddleware');
+const { connectToDB } = require('./config/db')
+const { errorHandler } = require('./middleware/errorMiddleware');
 
 // Connect to DB using connection configuration from config/db.ts
-connectDB();
+connectToDB();
 
 // Initialize express variable
 const app = express();
@@ -34,9 +34,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Link general feed and user routes to the respective route files and functions
 app.use('/api/feeds', require('./routes/feedRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/logs', require('./routes/logRoutes'));
 
 // Set express to use error handler middleware
-app.use(errorHandlerMiddleware);
+app.use(errorHandler);
 
 // Set express to listen on configured Port and log message on server start
 app.listen(port, () => console.log(`Server started on port ${port}`));
