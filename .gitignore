@@ -1,2 +1,4 @@
 node_modules
-development.env
+.env
+
+.gitignore

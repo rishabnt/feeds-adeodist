@@ -1,6 +1,7 @@
 const userJwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
+const { logger } = require('../logger')
 
 import { User } from '../interface/user.interface';
 import { Request, Response, NextFunction } from 'express';
@@ -14,6 +15,7 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
 
     if(!key || !value) {
         res.status(400);
+        logger.error("/api/users/getUser - Please enter required parameters")
         throw new Error("Please enter required parameters")
     }
 
@@ -32,9 +34,11 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
     // console.log(users)
 
     if(users) {
+        logger.info("/api/users/getUser - Success")
         res.status(200).json(users);
     } else {
         res.status(400);
+        logger.error("/api/users/getUser - User not found");
         throw new Error("User not found")
     }
 
@@ -54,6 +58,7 @@ const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
             case 'basic':
                 users = users.filter(user => user.id === req.user.id)
         }
+        logger.info("/api/users/getAllUsers - Success");
         res.status(200).json(users);
     }    
 })
@@ -63,11 +68,13 @@ const postUser = asyncHandler(async (req: Request, res: Response) => {
 
     if(!name || !email || !role || !password) {
         res.status(400);
+        logger.error("/api/users/postUser - Please enter all the fields.");
         throw new Error("Please enter all the fields.")
     }
 
     if(!(role === 'basic' || role === 'admin')) {
         res.status(400);
+        logger.error("/api/users/postUser - Invalid role.");
         throw new Error("Invalid role.")
     }
 
@@ -76,17 +83,20 @@ const postUser = asyncHandler(async (req: Request, res: Response) => {
         case 'super-admin':
             if(role === 'super-admin') {
                 res.status(400);
+                logger.error("/api/users/postUser - There can only be 1 Super admin account");
                 throw new Error("There can only be 1 Super admin account");
             }
             break;
         case 'admin':
             if(role !== 'basic') {
                 res.status(400);
+                logger.error("/api/users/postUser - Admins can only create Basic user accounts");
                 throw new Error("Admins can only create Basic user accounts")
             };
             break;
         case 'basic':
             res.status(400);
+            logger.error("/api/users/postUser - Action not allowed");
             throw new Error("Action not allowed")
             
     }
@@ -96,6 +106,7 @@ const postUser = asyncHandler(async (req: Request, res: Response) => {
 
     if(userExists) {
         res.status(400);
+        logger.error("/api/users/postUser - User already exists.");
         throw new Error("User already exists.");
     }
 
@@ -105,12 +116,14 @@ const postUser = asyncHandler(async (req: Request, res: Response) => {
     const user = await createUser(name, role, email, hashedPassword);
 
     if(user) {
+        logger.info("/api/users/postUser - Created");
         res.status(201).json({
             message: `${user} row(s) updated`,
             token: generateToken(user.id)
         })
     } else {
         res.status(400)
+        logger.error("/api/users/postUser - User Invalid data");
         throw new Error("User Invalid data")
     }    
 })
@@ -131,6 +144,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
         })
     } else {
         res.status(400);
+        logger.error("/api/users/loginUser - Invalid Credentials");
         throw new Error("Invalid Credentials");
     }    
 })
@@ -140,11 +154,13 @@ const putUser = asyncHandler(async (req: Request, res: Response) => {
 
     if(!email || !key || !value) {
         res.status(400);
+        logger.error("/api/users/putUser - Please enter data to update");
         throw new Error("Please enter data to update")
     }
 
     if(key === 'role' || key === 'password' || key === 'id') {
         res.status(400);
+        logger.error("/api/users/putUser - This change not allowed, only name and email can be changed.");
         throw new Error("This change not allowed, only name and email can be changed.");
     }
 
@@ -152,6 +168,7 @@ const putUser = asyncHandler(async (req: Request, res: Response) => {
         const checkUser = await findUsersByColumn("EMAIL", value);
         if(checkUser) {
             res.status(400);
+            logger.error("/api/users/putUser - User with this email already exists");
             throw new Error("User with this email already exists");
         }
     }
@@ -167,18 +184,22 @@ const putUser = asyncHandler(async (req: Request, res: Response) => {
             case 'admin':
                 if(user.role !== 'basic' && user.email === req.user.email)  {
                     res.status(400);
+                    logger.error("/api/users/putUser - Cannot update non-basic or other admin accounts.");
                     throw new Error("Cannot update non-basic or other admin accounts.")
                 }
                 break;
             case 'basic':
                 res.status(400);
+                logger.error("/api/users/putUser - Action not allowed");
                 throw new Error("Action not allowed")
                 
         }
         const updatedUser = await updateUser(email, key, value);
+        logger.info("/api/users/putUser - Updated user");
         res.status(200).json(updatedUser);
     } else {
         res.status(400);
+        logger.error("/api/users/putUser - User does not exist");
         throw new Error("User does not exist");
     }
 
@@ -199,18 +220,22 @@ const deleteUser = asyncHandler(async (req: Request, res: Response) => {
             case 'admin':
                 if(user.role !== 'basic') {
                     res.status(400);
+                    logger.error("/api/users/deleteUser - Cannot delete non-basic accounts.");
                     throw new Error("Cannot delete non-basic accounts.")
                 }
                 break;
             case 'basic':
                 res.status(400);
+                logger.error("/api/users/deleteUser - Action not allowed");
                 throw new Error("Action not allowed")
                 
         }
         const deletedUser = await removeUser(email);
+        logger.error("/api/users/deleteUser - Deleted");
         res.status(200).json(deletedUser)
     } else {
         res.status(400);
+        logger.error("/api/users/deleteUser - User does not exist");
         throw new Error("User does not exist");
     }
 })

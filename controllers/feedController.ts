@@ -1,6 +1,7 @@
 const userJwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
+const {logger} = require('../logger');
 
 import { Feed } from '../interface/feed.interface';
 import { Request, Response, NextFunction } from 'express';
@@ -14,6 +15,7 @@ const getFeed = asyncHandler(async (req: Request, res: Response) => {
 
     if(!id) {
         res.status(400);
+        logger.error("/api/feeds/getFeed - Please enter required parameters")
         throw new Error("Please enter required parameters")
     }
 
@@ -30,10 +32,13 @@ const getFeed = asyncHandler(async (req: Request, res: Response) => {
                 feeds = feeds.filter((feed: Feed) => feed.canAccess === 'basic')
                 
         }
+        
+        logger.info("/api/feeds/getFeed - Success")
         res.status(200).json(feeds);
     } else {
         res.status(400);
-        throw new Error("Feed not found")
+        logger.error("/api/feeds/getFeed - Please enter required parameters")
+        throw new Error("Please enter required parameters")
     }
 })
 
@@ -49,6 +54,7 @@ const getAllFeeds = asyncHandler(async (req: Request, res: Response) => {
                 feeds = feeds.filter((feed: Feed) => feed.canAccess === 'basic')
                 
         }
+        logger.info("/api/feeds/getAllFeeds - Success");
         res.status(200).json(feeds);   
     } 
 })
@@ -58,12 +64,14 @@ const postFeed = asyncHandler(async (req: Request, res: Response) => {
 
     if(!name || !description) {
         res.status(400);
+        logger.error("/api/feeds/postFeed - Please enter all the fields.");
         throw new Error("Please enter all the fields.")
     }
 
     // check if role names are valid
     if(!['super-admin', 'admin', 'basic'].includes(canAccess) || !['super-admin', 'admin', 'basic'].includes(canDelete)) {
         res.status(400);
+        logger.error("/api/feeds/postFeed - Please specify valid role names.");
         throw new Error("Please specify valid role names.")
     }
 
@@ -72,11 +80,13 @@ const postFeed = asyncHandler(async (req: Request, res: Response) => {
         case 'admin':
             if(canAccess === 'super-admin' || canDelete === 'basic') {
                 res.status(400)
+                logger.error("/api/feeds/postFeed - Invalid access.");
                 throw new Error("Invalid access");
             }
             break;
         case 'basic':
             res.status(400)
+            logger.error("/api/feeds/postFeed - Invalid action.");
             throw new Error("Invalid action")
             
     }
@@ -86,11 +96,13 @@ const postFeed = asyncHandler(async (req: Request, res: Response) => {
     const feed = await createFeed(name, url, description, canAccess, canDelete);
 
     if(feed) {
+        logger.info(req.user.id + req.user.name + ": Created new Feed - " + name);
         res.status(201).json({
             rowCount: feed.rowCount
         })
     } else {
         res.status(400)
+        logger.error("/api/feeds/postFeed - Feed invalid data");
         throw new Error("Feed Invalid data")
     }    
 })
@@ -100,6 +112,7 @@ const putFeed = asyncHandler(async (req: Request, res: Response) => {
 
     if(!id || !key || !value) {
         res.status(400);
+        logger.error("/api/feeds/putFeed - Please enter data to update");
         throw new Error("Please enter data to update")
     }
 
@@ -112,18 +125,22 @@ const putFeed = asyncHandler(async (req: Request, res: Response) => {
             case 'admin':
                 if(feed.canAccess === 'super-admin') {
                     res.status(400)
+                    logger.error("/api/feeds/putFeed - You don't have access to this feed.");
                     throw new Error("You don't have access to this feed.");
                 }
                 break;
             case 'basic':
                 res.status(400)
+                logger.error("/api/feeds/putFeed - Invalid action");
                 throw new Error("Invalid action")
                 
         }
         const updatedUser = await updateFeed(id, key, value);
+        logger.info("/api/feeds/putFeed - Updated row count - ' + updatedUser.rowCount");
         res.status(200).json('Updated row count - ' + updatedUser.rowCount)
     } else {
         res.status(400);
+        logger.error("/api/feeds/putFeed - Feed does not exist");
         throw new Error("Feed does not exist");
     }
 
@@ -141,18 +158,22 @@ const deleteFeed = asyncHandler(async (req: Request, res: Response) => {
             case 'admin':
                 if(feed.canAccess === 'super-admin' || feed.canDelete === 'super-admin') {
                     res.status(400)
+                    logger.error("/api/feeds/deleteFeed - You don't have access to this feed.");
                     throw new Error("You don't have access to this feed.");
                 }
                 break;
             case 'basic':
                 res.status(400)
+                logger.error("/api/feeds/deleteFeed - Invalid action");
                 throw new Error("Invalid action")
                 
         }
         const deletedFeed = await removeFeed(id);
+        logger.info('Deleted row count - ' + deletedFeed.rowCount);
         res.status(200).json('Deleted row count - ' + deletedFeed.rowCount);
     } else {
         res.status(400);
+        logger.error("/api/feeds/deleteFeed - Feed does not exist");
         throw new Error("Feed does not exist");
     }
 })
