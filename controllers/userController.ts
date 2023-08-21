@@ -216,7 +216,8 @@ const deleteUser = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
 
     // Check if user exists
-    const user = await findUsersByColumn("EMAIL", email);
+    const user = (await findUsersByColumn("EMAIL", email))[0];
+
 
     if(user) {
         // Checking authorization

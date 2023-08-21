@@ -39,7 +39,7 @@ const userProtect = asyncHandler(async (req: Request, res: Response, next: NextF
             token = req.headers.authorization?.split(' ')[1];
 
             // Verify token
-            console.log(token);
+            // console.log(token);
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             
             req.user = (await findUsersByColumn("ID", decoded.id))[0];
