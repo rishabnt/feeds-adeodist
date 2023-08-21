@@ -1,7 +1,5 @@
-const userJwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
-const {logger} = require('../logger');
+const { logger } = require('../logger');
 
 import { Feed } from '../interface/feed.interface';
 import { Request, Response, NextFunction } from 'express';
@@ -20,16 +18,16 @@ const getFeed = asyncHandler(async (req: Request, res: Response) => {
     }
 
     let feeds = await findFeedsByColumn("ID", id);
-    // console.log(feed)
+    console.log(req.user)
 
     if(feeds) {
         // Filtering results based on role
         switch(req.user.role) {
             case 'admin':
-                feeds = feeds.filter((feed: Feed) => (feed.canAccess === 'admin' || feed.canAccess === 'basic'))
+                feeds = feeds.filter((feed: Feed) => (feed.can_access === 'admin' || feed.can_access === 'basic'))
                 break;
             case 'basic':
-                feeds = feeds.filter((feed: Feed) => feed.canAccess === 'basic')
+                feeds = feeds.filter((feed: Feed) => feed.can_access === 'basic')
                 
         }
         
@@ -44,14 +42,15 @@ const getFeed = asyncHandler(async (req: Request, res: Response) => {
 
 const getAllFeeds = asyncHandler(async (req: Request, res: Response) => {
     let feeds = await findAllFeeds();
+    console.log(req.user);
     if(feeds){
         // Filtering results based on role
         switch(req.user.role) {
             case 'admin':
-                feeds = feeds.filter((feed: Feed) => (feed.canAccess === 'admin' || feed.canAccess === 'basic'))
+                feeds = feeds.filter((feed: Feed) => (feed.can_access === 'admin' || feed.can_access === 'basic'))
                 break;
             case 'basic':
-                feeds = feeds.filter((feed: Feed) => feed.canAccess === 'basic')
+                feeds = feeds.filter((feed: Feed) => feed.can_access === 'basic')
                 
         }
         logger.info("/api/feeds/getAllFeeds - Success");
@@ -60,7 +59,7 @@ const getAllFeeds = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const postFeed = asyncHandler(async (req: Request, res: Response) => {
-    const { name, description, canAccess, canDelete } = req.body;
+    const { name, description, can_access, can_delete } = req.body;
 
     if(!name || !description) {
         res.status(400);
@@ -69,7 +68,7 @@ const postFeed = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // check if role names are valid
-    if(!['super-admin', 'admin', 'basic'].includes(canAccess) || !['super-admin', 'admin', 'basic'].includes(canDelete)) {
+    if(!['super-admin', 'admin', 'basic'].includes(can_access) || !['super-admin', 'admin', 'basic'].includes(can_delete)) {
         res.status(400);
         logger.error("/api/feeds/postFeed - Please specify valid role names.");
         throw new Error("Please specify valid role names.")
@@ -78,7 +77,7 @@ const postFeed = asyncHandler(async (req: Request, res: Response) => {
     // Authorization
     switch(req.user.role) {
         case 'admin':
-            if(canAccess === 'super-admin' || canDelete === 'basic') {
+            if(can_access === 'super-admin' || can_delete === 'basic') {
                 res.status(400)
                 logger.error("/api/feeds/postFeed - Invalid access.");
                 throw new Error("Invalid access");
@@ -93,7 +92,7 @@ const postFeed = asyncHandler(async (req: Request, res: Response) => {
 
     const url = Math.floor(Math.random() * 10000);
 
-    const feed = await createFeed(name, url, description, canAccess, canDelete);
+    const feed = await createFeed(name, url, description, can_access, can_delete);
 
     if(feed) {
         logger.info(req.user.id + req.user.name + ": Created new Feed - " + name);
@@ -123,7 +122,7 @@ const putFeed = asyncHandler(async (req: Request, res: Response) => {
         // Authorization
         switch(req.user.role) {
             case 'admin':
-                if(feed.canAccess === 'super-admin') {
+                if(feed.can_access === 'super-admin') {
                     res.status(400)
                     logger.error("/api/feeds/putFeed - You don't have access to this feed.");
                     throw new Error("You don't have access to this feed.");
@@ -156,7 +155,7 @@ const deleteFeed = asyncHandler(async (req: Request, res: Response) => {
     if(feed) {
         switch(req.user.role) {
             case 'admin':
-                if(feed.canAccess === 'super-admin' || feed.canDelete === 'super-admin') {
+                if(feed.can_access === 'super-admin' || feed.can_delete === 'super-admin') {
                     res.status(400)
                     logger.error("/api/feeds/deleteFeed - You don't have access to this feed.");
                     throw new Error("You don't have access to this feed.");

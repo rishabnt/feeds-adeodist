@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 // const path = require('path');
 const express = require('express')
-const logger = require('./logger');
+const { logger } = require('./logger');
 const colors = require('colors')
 const dotenv = require('dotenv').config()
 const port = process.env.PORT || 5000
@@ -35,7 +35,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Link general feed and user routes to the respective route files and functions
 app.use('/api/feeds', require('./routes/feedRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
-// app.use('/api/logs', require('./routes/logRoutes'));
+app.use('/api/logs', require('./routes/logRoutes'));
 
 // Set express to use error handler middleware
 app.use(errorHandler);

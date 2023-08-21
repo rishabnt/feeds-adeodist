@@ -1,7 +1,7 @@
 const userJwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
-const { logger } = require('../logger')
+const { logger } = require('../logger');
 
 import { User } from '../interface/user.interface';
 import { Request, Response, NextFunction } from 'express';
@@ -58,7 +58,7 @@ const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
             case 'basic':
                 users = users.filter(user => user.id === req.user.id)
         }
-        logger.info("/api/users/getAllUsers - Success");
+        logger.error("/api/users/getAllUsers - Success");
         res.status(200).json(users);
     }    
 })
@@ -174,18 +174,24 @@ const putUser = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // Check if user exists
-    const user = await findUsersByColumn("EMAIL", email);
+    const user = (await findUsersByColumn("EMAIL", email))[0];
 
     if(user) {
         // Checking authorization
         switch(req.user.role) {
-            case 'super-admin':
-                break;
+            
             case 'admin':
-                if(user.role !== 'basic' && user.email === req.user.email)  {
+                // console.log(user, req.user.email)
+                if(user.role === 'super-admin')  {
                     res.status(400);
-                    logger.error("/api/users/putUser - Cannot update non-basic or other admin accounts.");
-                    throw new Error("Cannot update non-basic or other admin accounts.")
+                    logger.error("/api/users/putUser - Cannot update super-admin account");
+                    throw new Error("Cannot update super-admin account")
+                } else if((user.role === 'admin' && user.id === req.user.id) || user.role === 'basic') {
+                    break;
+                } else {
+                    res.status(400);
+                    logger.error("/api/users/putUser - Cannot update other admin accounts");
+                    throw new Error("Cannot update other admin accounts")
                 }
                 break;
             case 'basic':
@@ -216,6 +222,11 @@ const deleteUser = asyncHandler(async (req: Request, res: Response) => {
         // Checking authorization
         switch(req.user.role) {
             case 'super-admin':
+                if(user.role === 'super-admin') {
+                    res.status(400);
+                    logger.error("/api/users/deleteUser - Super admin cannot delete himself");
+                    throw new Error("Super admin cannot delete himself")
+                }
                 break;
             case 'admin':
                 if(user.role !== 'basic') {
